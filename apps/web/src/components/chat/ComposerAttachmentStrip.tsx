@@ -7,7 +7,14 @@ import type {
 } from "@t3tools/contracts";
 import { formatAttachmentSize } from "@t3tools/client-runtime/state/attachments";
 import { T, useGT, useMessages } from "gt-react";
-import { CircleAlertIcon, ImageIcon, PaperclipIcon, PlayIcon, XIcon } from "lucide-react";
+import {
+  CircleAlertIcon,
+  ImageIcon,
+  PaperclipIcon,
+  PencilIcon,
+  PlayIcon,
+  XIcon,
+} from "lucide-react";
 import { type ComponentProps, type Ref, useLayoutEffect, useRef } from "react";
 
 import {
@@ -156,6 +163,7 @@ export function ComposerAttachmentMediaRow({
   onExpandImage,
   onCopySnapshot,
   onFileOpen,
+  onAnnotateImage,
   onRemoveImage,
   onRemoveFile,
 }: {
@@ -176,6 +184,7 @@ export function ComposerAttachmentMediaRow({
   readonly onCopySnapshot: (imageId: string) => Promise<void>;
   readonly onExpandImage: (preview: ExpandedImagePreview) => void;
   readonly onFileOpen: (attachment: ChatFileAttachment) => void;
+  readonly onAnnotateImage: (imageId: string) => void;
   readonly onRemoveImage: (imageId: string) => void;
   readonly onRemoveFile: (fileId: string) => void;
 }) {
@@ -330,11 +339,36 @@ export function ComposerAttachmentMediaRow({
               )}
               <span
                 className={cn(
-                  "absolute right-1 top-1 flex",
+                  "absolute right-1 top-1 flex gap-0.5",
                   source?.kind === "snap-shot" &&
                     "opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/attachment:opacity-100 group-focus-within/attachment:opacity-100",
                 )}
               >
+                {ready ? (
+                  <span
+                    className={cn(
+                      "flex",
+                      source?.kind !== "snap-shot" &&
+                        "opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/attachment:opacity-100 has-focus-visible:opacity-100",
+                    )}
+                  >
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            variant="media-close"
+                            size="icon-xs"
+                            onClick={() => onAnnotateImage(image.id)}
+                            aria-label={`Annotate ${image.name}`}
+                          />
+                        }
+                      >
+                        <PencilIcon />
+                      </TooltipTrigger>
+                      <TooltipPopup side="top">Annotate</TooltipPopup>
+                    </Tooltip>
+                  </span>
+                ) : null}
                 <Button
                   variant="media-close"
                   size="icon-xs"
