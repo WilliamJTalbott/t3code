@@ -339,36 +339,11 @@ export function ComposerAttachmentMediaRow({
               )}
               <span
                 className={cn(
-                  "absolute right-1 top-1 flex gap-0.5",
+                  "absolute right-1 top-1 flex flex-col gap-0.5",
                   source?.kind === "snap-shot" &&
                     "opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/attachment:opacity-100 group-focus-within/attachment:opacity-100",
                 )}
               >
-                {ready ? (
-                  <span
-                    className={cn(
-                      "flex",
-                      source?.kind !== "snap-shot" &&
-                        "opacity-0 transition-opacity pointer-coarse:opacity-100 group-hover/attachment:opacity-100 has-focus-visible:opacity-100",
-                    )}
-                  >
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <Button
-                            variant="media-close"
-                            size="icon-xs"
-                            onClick={() => onAnnotateImage(image.id)}
-                            aria-label={`Annotate ${image.name}`}
-                          />
-                        }
-                      >
-                        <PencilIcon />
-                      </TooltipTrigger>
-                      <TooltipPopup side="top">Annotate</TooltipPopup>
-                    </Tooltip>
-                  </span>
-                ) : null}
                 <Button
                   variant="media-close"
                   size="icon-xs"
@@ -377,6 +352,23 @@ export function ComposerAttachmentMediaRow({
                 >
                   <XIcon />
                 </Button>
+                {ready ? (
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          variant="media-close"
+                          size="icon-xs"
+                          onClick={() => onAnnotateImage(image.id)}
+                          aria-label={`Annotate ${image.name}`}
+                        />
+                      }
+                    >
+                      <PencilIcon />
+                    </TooltipTrigger>
+                    <TooltipPopup side="right">Annotate</TooltipPopup>
+                  </Tooltip>
+                ) : null}
               </span>
             </SnapShotAttachmentFrame>
           );
