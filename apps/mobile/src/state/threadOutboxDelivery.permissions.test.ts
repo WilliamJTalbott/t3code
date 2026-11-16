@@ -381,6 +381,7 @@ describe("queued task operation access", () => {
     // Ending the edit wakes the drain through a registry notification, the path on which the
     // mount's synchronous row change notifies the drain again mid-pass.
     appAtomRegistry.set(editingQueuedMessageIdsAtom, {});
+    await Promise.resolve();
     expect(state.familyMount).toHaveBeenCalledOnce();
     expect(confirm).toHaveBeenCalledOnce();
     await delivered.promise.finally(release);
@@ -662,6 +663,7 @@ describe("queued delivery timing", () => {
       if (id === null) settled.resolve();
     });
     change();
+    await Promise.resolve();
     expect(appAtomRegistry.get(dispatchingQueuedMessageIdAtom)).not.toBeNull();
     await settled.promise.finally(release);
   }
@@ -683,6 +685,7 @@ describe("queued delivery timing", () => {
     state.cleanups.push(() => appAtomRegistry.set(composerAttachmentUploadsAtom, {}));
     await state.manager.enqueue(message({ attachments: [photo] }));
     startDelivery();
+    await Promise.resolve();
     expect(appAtomRegistry.get(dispatchingQueuedMessageIdAtom)).toBeNull();
 
     await deliveryAfter(() =>
@@ -693,6 +696,35 @@ describe("queued delivery timing", () => {
     expect(state.prepare).toHaveBeenCalledOnce();
     expect(state.start).toHaveBeenCalledOnce();
     expect(remaining()).toEqual([]);
+  });
+
+  it("lets the composer claim a newly queued attachment before deciding to upload it", async () => {
+    setOperateGrant("secondary", true);
+    const photo = {
+      id: "photo-1",
+      type: "image" as const,
+      name: "photo.png",
+      mimeType: "image/png",
+      sizeBytes: 3,
+      previewUri: "file:///photo.png",
+      fileUri: "file:///photo.png",
+    };
+    startDelivery();
+    // Like the upload worker, which subscribes after delivery starts and claims queued uploads.
+    const release = appAtomRegistry.subscribe(
+      state.manager.queuedMessagesByThreadKeyAtom,
+      (queued) => {
+        if (Object.keys(queued).length === 0) return;
+        appAtomRegistry.set(composerAttachmentUploadsAtom, {
+          "secondary:photo-1": { status: "uploading", progress: 0 },
+        });
+      },
+    );
+    state.cleanups.push(release, () => appAtomRegistry.set(composerAttachmentUploadsAtom, {}));
+    await state.manager.enqueue(message({ attachments: [photo] }));
+    await Promise.resolve();
+    expect(state.prepare).not.toHaveBeenCalled();
+    expect(appAtomRegistry.get(dispatchingQueuedMessageIdAtom)).toBeNull();
   });
 
   it("sends at once when its environment reconnects instead of waiting out the backoff", async () => {
@@ -714,6 +746,7 @@ describe("queued delivery timing", () => {
     appAtomRegistry.set(environments, [
       { environmentId: "secondary", connectionState: "disconnected" },
     ]);
+    await Promise.resolve();
     await deliveryAfter(() => appAtomRegistry.set(environments, connected));
     expect(state.start).toHaveBeenCalledTimes(2);
     expect(remaining()).toEqual([]);

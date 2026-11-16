@@ -1471,7 +1471,20 @@ export function createThreadOutboxDelivery(): {
     }
   }
 
-  const stopDraining = appAtomRegistry.subscribe(deliveryInputsAtom, drain, { immediate: true });
+  // Subscribers to one change run in turn; waiting a microtask lets the upload worker claim a
+  // newly queued attachment before a pass decides whether to upload it itself.
+  let drainScheduled = false;
+  function scheduleDrain(): void {
+    if (drainScheduled) return;
+    drainScheduled = true;
+    queueMicrotask(() => {
+      drainScheduled = false;
+      drain();
+    });
+  }
+  const stopDraining = appAtomRegistry.subscribe(deliveryInputsAtom, scheduleDrain, {
+    immediate: true,
+  });
   const stopCollectingOutcomes = appAtomRegistry.subscribe(
     settledCreationOutcomeKeysAtom,
     (threadKeys) => {
