@@ -344,6 +344,8 @@ export function NewTaskFlowProvider(
     ) {
       return;
     }
+    // The screen's effects run first and may already have created a draft for the route's project.
+    if (readNewTaskFlowState(flowKey).draftKey !== null) return;
     // Creates the persistent draft once the project selection is ready; the key must exist before the composer mounts.
     updateNewTaskFlowState(flowKey, {
       draftKey: createNewTaskDraft({
