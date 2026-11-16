@@ -109,6 +109,7 @@ import {
   composerDraftHasUserContent,
   composerTargetKey,
   readComposerDraftPrompt,
+  readComposerThreadDraft,
   resolveLiveComposerDraftTarget,
   useComposerDraftStore,
   useComposerThreadDraft,
@@ -210,6 +211,7 @@ import {
   ComposerCommandMenu,
   composerSuggestionOptionId,
 } from "./ComposerCommandMenu";
+import { ImageAnnotationDialog } from "./ImageAnnotationDialog";
 import {
   ComposerAttachButton,
   ComposerAttachmentFileList,
@@ -722,6 +724,8 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
   const openPrLink = useOpenPrLink(routeThreadRef);
   const [previewFileId, setPreviewFileId] = useState<string | null>(null);
   const previewFile = composerFiles.find((file) => file.id === previewFileId);
+  const [annotatingImageId, setAnnotatingImageId] = useState<string | null>(null);
+  const annotatingImage = composerImages.find((image) => image.id === annotatingImageId);
   const composerContextActions = {
     environmentId,
     cwd: gitCwd ?? undefined,
@@ -2739,6 +2743,16 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       insertAttachmentReferences,
     });
 
+  // The annotated copy goes through normal intake (compression, upload, limits); the original
+  // is removed only once the copy is in the draft, so a failed intake never loses the image.
+  const replaceComposerImageWithAnnotation = async (imageId: string, annotated: File) => {
+    setAnnotatingImageId(null);
+    const imageIds = () => readComposerThreadDraft(attachmentDraftTarget).images.map((i) => i.id);
+    const before = new Set(imageIds());
+    await addComposerAttachments([annotated], { skipImageInlineChip: true });
+    if (imageIds().some((id) => !before.has(id))) removeComposerImageFromDraft(imageId);
+  };
+
   const onComposerCommandKeyStable = useStableCallback(onComposerCommandKey);
   const isPathQueryActiveStable = useStableCallback(
     () => resolveActiveComposerTrigger().trigger?.kind === "path",
@@ -3398,6 +3412,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
         onCopySnapshot={copyComposerSnapshotStable}
         onExpandImage={onExpandImage}
         onFileOpen={onFileOpen}
+        onAnnotateImage={setAnnotatingImageId}
         onRemoveImage={removeComposerImage}
         onRemoveFile={removeComposerFileFromDraft}
       />
@@ -3681,6 +3696,17 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
               {composerAttachmentFileList}
 
               <div className="relative">
+                {annotatingImage ? (
+                  <ImageAnnotationDialog
+                    key={annotatingImage.id}
+                    file={annotatingImage.file}
+                    name={annotatingImage.name}
+                    onCancel={() => setAnnotatingImageId(null)}
+                    onSave={(annotated) =>
+                      void replaceComposerImageWithAnnotation(annotatingImage.id, annotated)
+                    }
+                  />
+                ) : null}
                 {previewFile ? (
                   <ComposerFilePreviewDialog
                     file={previewFile}
