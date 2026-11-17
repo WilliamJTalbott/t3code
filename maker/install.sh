@@ -14,7 +14,8 @@ job="$HOME/Library/Caches/maker-t3-install.sh"
 cat > "$job" <<'JOB'
 #!/bin/bash
 set -u
-dmg="$1"; delay="$2"; label="$3"
+dmg="$1"; delay="$2"; label="$3"; log="$4"
+exec >>"$log" 2>&1
 app="/Applications/T3 Code (Beta).app"
 echo "=== $(date) installing $dmg"
 sleep "$delay"
@@ -38,5 +39,5 @@ echo "=== $(date) done: $(defaults read "$app/Contents/Info" CFBundleShortVersio
 launchctl remove "$label"
 JOB
 launchctl remove "$label" 2>/dev/null || true
-launchctl submit -l "$label" -o "$log" -e "$log" -- /bin/bash "$job" "$dmg" "$delay" "$label"
+launchctl submit -l "$label" -- /bin/bash "$job" "$dmg" "$delay" "$label" "$log"
 echo "T3 will quit and restart with the new build in ${delay}s (log: $log)"
