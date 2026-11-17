@@ -1,0 +1,25 @@
+# Dev-loop menu (Maker fork; lives on chore/maker). See ~/.claude/rules/dev-loop.md.
+# Every task needs a description.
+
+[tasks.setup]
+description = "Install dependencies"
+run = "pnpm install"
+
+[tasks.dev]
+description = "Web + server in dev mode with live reload (separate from the installed app)"
+run = "pnpm dev"
+
+[tasks.verify]
+description = "After any change: lint, web typecheck, and the fork's patch tests"
+run = [
+  "pnpm exec vp lint --report-unused-disable-directives apps/web/src",
+  "cd apps/web && pnpm exec vp run typecheck",
+  "cd apps/web && pnpm exec vp test run src/components/chat/MarkdownProjectActionLink.test.ts --project unit",
+]
+
+[tasks.show]
+description = "Rebase the patches onto the latest stable release, build, and install over T3 (T3 restarts)"
+run = '''
+dmg="$(maker/update.sh --force | tail -1)"
+maker/install.sh "$dmg"
+'''
