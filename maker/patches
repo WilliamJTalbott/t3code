@@ -1,0 +1,4 @@
+# Patch branches applied on top of the latest stable tag, in order.
+# chore/maker (this tooling) always goes last and is added by the scripts.
+feat/image-annotation
+feat/action-links
