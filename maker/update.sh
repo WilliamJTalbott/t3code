@@ -28,8 +28,11 @@ git fetch --quiet upstream --tags
 git fetch --quiet origin
 latest="$(git tag -l 'v*' | grep -E "$stable" | sort -V | tail -1)"
 installed="$(defaults read "$app/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo none)"
-echo "latest stable: $latest; installed: $installed"
-if [[ "v$installed" == "$latest" ]] && ! $force; then
+# The own build is ad-hoc signed; an official build (Team ID) means it was replaced.
+own=false
+codesign -dv "$app" 2>&1 | grep -q '^Signature=adhoc' && own=true
+echo "latest stable: $latest; installed: $installed (own build: $own)"
+if [[ "v$installed" == "$latest" ]] && $own && ! $force; then
   echo "up-to-date"
   exit 0
 fi
