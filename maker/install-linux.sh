@@ -21,6 +21,7 @@ echo "=== $(date) installing $img"
 sleep "$delay"
 
 # Unpack first, so a bad image never takes the running app down.
+mkdir -p "$HOME/.local/opt"
 stage="$(mktemp -d "$HOME/.local/opt/.t3code-maker.XXXX")"
 chmod +x "$img"
 if ! (cd "$stage" && "$img" --appimage-extract >/dev/null); then
