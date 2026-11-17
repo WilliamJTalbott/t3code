@@ -107,6 +107,10 @@ import { parseComposerContextHref } from "@t3tools/shared/composerContextReferen
 import { parseThreadLinkHref } from "@t3tools/shared/threadLinks";
 import { AssistantCitationEmbed } from "./chat/AssistantCitationChip";
 import { MarkdownThreadLink } from "./chat/MarkdownThreadLink";
+import {
+  MarkdownProjectActionLink,
+  parseProjectActionHref,
+} from "./chat/MarkdownProjectActionLink";
 import { mathKind } from "@t3tools/shared/markdownMath";
 import remarkMath from "remark-math";
 import {
@@ -441,6 +445,7 @@ function markdownUrlTransform(href: string) {
   if (parseAssistantCitationHref(href)) return href;
   if (parseComposerContextHref(href)) return href;
   if (parseThreadLinkHref(href)) return href;
+  if (parseProjectActionHref(href)) return href;
   if (isWindowsDrivePathHref(href)) return href;
   if (isLocalEditorFileHref(href)) return href;
   return rewriteMarkdownFileUriHref(href) ?? defaultUrlTransform(href);
@@ -1227,6 +1232,7 @@ const CHAT_MARKDOWN_COMPONENTS = {
       updateThreadPullRequestLink,
       fileLinkChip,
       renderContextReference,
+      onRunShellCommand,
     } = use(ChatMarkdownRendererContext);
     const text = use(ChatMarkdownTextContext);
     const citation = href ? parseAssistantCitationHref(href) : null;
@@ -1246,6 +1252,18 @@ const CHAT_MARKDOWN_COMPONENTS = {
         <MarkdownThreadLink environmentId={environmentId} link={threadLink} label={label} />
       ) : (
         <span>{label ?? gt("Thread")}</span>
+      );
+    }
+    const actionId = href ? parseProjectActionHref(href) : null;
+    if (actionId) {
+      const written = hastPlainTextDeep(node);
+      return (
+        <MarkdownProjectActionLink
+          threadRef={threadRef}
+          actionId={actionId}
+          written={written && parseProjectActionHref(written) === null ? written : null}
+          onRunShellCommand={onRunShellCommand}
+        />
       );
     }
     const contextReference = href ? parseComposerContextHref(href) : null;
