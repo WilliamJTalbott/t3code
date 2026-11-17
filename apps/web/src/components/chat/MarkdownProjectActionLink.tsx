@@ -12,7 +12,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { useProjects, useThreadShell } from "~/state/entities";
 
 // Maker fork: `[label](t3-action:<script-id>)` in a message is a small button that runs that
-// project action in a T3 terminal, the same way a code block's "Run in terminal" does.
+// project action in a new side-panel terminal.
 
 const ACTION_HREF_PATTERN = /^t3-action:([a-z0-9][a-z0-9-]*)$/;
 
@@ -64,7 +64,9 @@ export function MarkdownProjectActionLink(props: {
   readonly threadRef: ScopedThreadRef | undefined;
   readonly actionId: string;
   readonly written: string | null;
-  readonly onRunShellCommand: ((command: string) => void) | undefined;
+  readonly onRunShellCommand:
+    | ((command: string, options?: { place?: "panel" }) => void)
+    | undefined;
 }) {
   const label = projectActionLabel(props.written, props.actionId);
   if (!props.threadRef || !props.onRunShellCommand) {
@@ -84,7 +86,7 @@ function ResolvedAction(props: {
   readonly threadRef: ScopedThreadRef;
   readonly actionId: string;
   readonly label: string;
-  readonly run: (command: string) => void;
+  readonly run: (command: string, options?: { place?: "panel" }) => void;
 }) {
   const scripts = useThreadProjectScripts(props.threadRef, props.threadRef.environmentId);
   const script = scripts.find((entry) => entry.id === props.actionId);
@@ -106,7 +108,7 @@ function ResolvedAction(props: {
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
-              props.run(script.command);
+              props.run(script.command, { place: "panel" });
             }}
           />
         }
@@ -114,7 +116,7 @@ function ResolvedAction(props: {
         <PlayIcon className="size-3 self-center fill-current text-success" aria-hidden />
         {props.label}
       </TooltipTrigger>
-      <TooltipPopup side="top">Run in terminal: {script.command}</TooltipPopup>
+      <TooltipPopup side="top">Run in side panel: {script.command}</TooltipPopup>
     </Tooltip>
   );
 }

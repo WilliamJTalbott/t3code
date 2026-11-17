@@ -214,8 +214,11 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
       preferNewTerminal?: boolean;
       rememberAsLastInvoked?: boolean;
       shellHistory?: "preserve" | "suppress";
+      /** Maker fork: "panel" runs it in a new side-panel terminal instead of the drawer. */
+      place?: "panel";
     },
   ) => {
+    const inPanel = options?.place === "panel";
     if (!hasTerminalWriteAccess() || !activeThreadId || !activeProject || !activeThread) return;
     if (options?.rememberAsLastInvoked !== false) {
       setLastInvokedScriptByProjectId((current) => {
@@ -225,6 +228,7 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
     }
     const targetCwd = options?.cwd ?? gitCwd ?? activeProject.workspaceRoot;
     const reusableTerminalId =
+      inPanel ||
       script.stopOnSettle ||
       options?.preferNewTerminal ||
       !canReuseTerminal ||
@@ -256,12 +260,16 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
       // The drawer opens with the target already placed: opening it empty would claim
       // DEFAULT_THREAD_TERMINAL_ID, which a right-panel terminal may already own.
       place: (terminalId) =>
-        reusableTerminalId === null
-          ? storeNewTerminal(activeThreadRef, terminalId)
-          : storeEnsureTerminal(activeThreadRef, terminalId, { open: true }),
-      ...(reusableTerminalId === null
-        ? { size: { cols: SCRIPT_TERMINAL_COLS, rows: SCRIPT_TERMINAL_ROWS } }
-        : { terminalId: reusableTerminalId }),
+        inPanel
+          ? useRightPanelStore.getState().openTerminal(activeThreadRef, terminalId)
+          : reusableTerminalId === null
+            ? storeNewTerminal(activeThreadRef, terminalId)
+            : storeEnsureTerminal(activeThreadRef, terminalId, { open: true }),
+      ...(inPanel
+        ? {}
+        : reusableTerminalId === null
+          ? { size: { cols: SCRIPT_TERMINAL_COLS, rows: SCRIPT_TERMINAL_ROWS } }
+          : { terminalId: reusableTerminalId }),
       location: { cwd: targetCwd, worktreePath: targetWorktreePath },
       stopOnSettle: script.stopOnSettle ?? false,
       ...(options?.env ? { extraEnv: options.env } : {}),
@@ -324,7 +332,7 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
   };
   const runProjectScriptStable = useStableCallback(runProjectScript);
 
-  const runShellCommand = (command: string) => {
+  const runShellCommand = (command: string, options?: { place?: "panel" }) => {
     void runProjectScript(
       {
         id: "chat-code-block",
@@ -333,7 +341,7 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
         icon: "play",
         runOnWorktreeCreate: false,
       },
-      { rememberAsLastInvoked: false, shellHistory: "preserve" },
+      { rememberAsLastInvoked: false, shellHistory: "preserve", ...options },
     );
   };
   const runShellCommandStable = useStableCallback(runShellCommand);
