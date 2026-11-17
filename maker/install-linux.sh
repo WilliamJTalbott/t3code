@@ -64,7 +64,9 @@ if [[ -d "$app/usr/share/icons" ]]; then
 fi
 update-desktop-database -q "$HOME/.local/share/applications" 2>/dev/null || true
 
-uwsm-app -- "$HOME/.local/bin/t3code" >/dev/null 2>&1 &
+# Its own unit, so it outlives this job and gets the graphical session's env.
+systemctl --user reset-failed app-t3code-maker 2>/dev/null || true
+systemd-run --user --quiet --collect --unit app-t3code-maker --slice app-graphical.slice -- "$HOME/.local/bin/t3code"
 echo "=== $(date) done: $(cat "$app/MAKER_VERSION")"
 JOB
 systemctl --user reset-failed "$unit" 2>/dev/null || true
