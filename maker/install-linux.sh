@@ -59,6 +59,10 @@ StartupWMClass=t3code
 Categories=Development;
 MimeType=x-scheme-handler/t3code;
 DESKTOP
+# Start at login. The PC logs in automatically, so this keeps T3 always on;
+# the background service can't share ~/.t3 with the app, so it stays off.
+mkdir -p "$HOME/.config/autostart"
+cp "$HOME/.local/share/applications/t3code.desktop" "$HOME/.config/autostart/t3code.desktop"
 if [[ -d "$app/usr/share/icons" ]]; then
   cp -r "$app/usr/share/icons/." "$HOME/.local/share/icons/"
 fi
