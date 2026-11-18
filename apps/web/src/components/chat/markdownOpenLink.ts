@@ -1,5 +1,5 @@
 // Maker fork: `[label](t3-open:<http(s) url>)` in a message is a web link drawn as a pill, like a
-// `t3-action:` button. Only links written this way get the pill; the dev-loop report line uses it.
+// `t3-action:` button. Only links written this way get the pill; the turn report uses it.
 
 const OPEN_LINK_PREFIX = "t3-open:";
 
@@ -23,8 +23,28 @@ export function shortWebUrl(target: string): string {
   return `${url.host}${path}${rest}`;
 }
 
-/** The written label, or the short URL when the text is empty or just repeats the link. */
+/** Longest URL label shown whole; longer ones show only their end. */
+const OPEN_LINK_LABEL_MAX = 32;
+
+/** A long short-URL cut to its last path segment: `…/added_to_workspace_email`. */
+export function compactWebUrl(target: string): string {
+  const short = shortWebUrl(target);
+  if (short.length <= OPEN_LINK_LABEL_MAX) return short;
+  const last = new URL(target).pathname.split("/").findLast((segment) => segment !== "");
+  if (!last) return short;
+  try {
+    return `…/${decodeURIComponent(last)}`;
+  } catch {
+    return `…/${last}`;
+  }
+}
+
+/**
+ * The written label, or the (compacted) URL when the text is empty or just
+ * repeats the link. The full URL stays in the pill's tooltip.
+ */
 export function openLinkLabel(written: string | null, href: string, target: string): string {
   const label = written?.trim();
-  return label && label !== href && label !== target ? label : shortWebUrl(target);
+  const repeatsLink = label === href || label === target || label === shortWebUrl(target);
+  return label && !repeatsLink ? label : compactWebUrl(target);
 }
