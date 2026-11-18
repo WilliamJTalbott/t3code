@@ -9,6 +9,11 @@ import { PlayIcon } from "lucide-react";
 
 import { useEnvironmentSettings } from "~/hooks/useSettings";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
+import {
+  MARKDOWN_PILL_CLASS_NAME,
+  MARKDOWN_PILL_ICON_CLASS_NAME,
+  MARKDOWN_PILL_INTERACTIVE_CLASS_NAME,
+} from "./markdownPill";
 import { useProjects, useThreadShell } from "~/state/entities";
 
 // Maker fork: `[label](t3-action:<script-id>)` in a message is a small button that runs that
@@ -43,8 +48,7 @@ function useThreadProjectScripts(
   return [...resolved, ...project.scripts.filter((s) => !resolved.some((r) => r.id === s.id))];
 }
 
-const PILL =
-  "mx-0.5 inline-flex items-baseline gap-1 rounded-md border border-border/70 bg-muted/60 px-1.5 py-px align-baseline font-mono text-xs leading-normal font-medium no-underline";
+const PILL = MARKDOWN_PILL_CLASS_NAME;
 
 function UnavailableAction(props: { readonly label: string; readonly reason: string }) {
   return (
@@ -52,7 +56,7 @@ function UnavailableAction(props: { readonly label: string; readonly reason: str
       <TooltipTrigger
         render={<span tabIndex={0} className={`${PILL} text-muted-foreground opacity-70`} />}
       >
-        <PlayIcon className="size-3 self-center opacity-60" aria-hidden />
+        <PlayIcon className={`${MARKDOWN_PILL_ICON_CLASS_NAME} opacity-60`} aria-hidden />
         {props.label}
       </TooltipTrigger>
       <TooltipPopup side="top">{props.reason}</TooltipPopup>
@@ -104,7 +108,7 @@ function ResolvedAction(props: {
         render={
           <button
             type="button"
-            className={`${PILL} cursor-pointer text-foreground transition-colors hover:border-border hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring`}
+            className={`${PILL} ${MARKDOWN_PILL_INTERACTIVE_CLASS_NAME}`}
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
@@ -113,7 +117,10 @@ function ResolvedAction(props: {
           />
         }
       >
-        <PlayIcon className="size-3 self-center fill-current text-success" aria-hidden />
+        <PlayIcon
+          className={`${MARKDOWN_PILL_ICON_CLASS_NAME} fill-current text-success`}
+          aria-hidden
+        />
         {props.label}
       </TooltipTrigger>
       <TooltipPopup side="top">Run in side panel: {script.command}</TooltipPopup>
