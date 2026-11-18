@@ -111,7 +111,7 @@ import {
   MarkdownProjectActionLink,
   parseProjectActionHref,
 } from "./chat/MarkdownProjectActionLink";
-import { localWebLinkLabel } from "./chat/markdownLocalLink";
+import { openLinkLabel, parseOpenLinkHref } from "./chat/markdownOpenLink";
 import {
   MARKDOWN_PILL_CLASS_NAME,
   MARKDOWN_PILL_ICON_CLASS_NAME,
@@ -453,6 +453,7 @@ function markdownUrlTransform(href: string) {
   if (parseComposerContextHref(href)) return href;
   if (parseThreadLinkHref(href)) return href;
   if (parseProjectActionHref(href)) return href;
+  if (parseOpenLinkHref(href)) return href;
   if (isWindowsDrivePathHref(href)) return href;
   if (isLocalEditorFileHref(href)) return href;
   return rewriteMarkdownFileUriHref(href) ?? defaultUrlTransform(href);
@@ -1213,7 +1214,10 @@ const CHAT_MARKDOWN_COMPONENTS = {
       />
     );
   },
-  a: function MarkdownAnchor({ node, href, children, title: _title, ...props }) {
+  a: function MarkdownAnchor({ node, href: writtenHref, children, title: _title, ...props }) {
+    // Maker fork: `t3-open:<url>` is that web link drawn as a pill; past here it acts as the URL.
+    const openTarget = parseOpenLinkHref(writtenHref);
+    const href = openTarget ?? writtenHref;
     const gt = useGT();
     const {
       canOperateHost,
@@ -1330,19 +1334,18 @@ const CHAT_MARKDOWN_COMPONENTS = {
       const canOpenInPreview =
         canOperatePreview && Boolean(threadRef && isPreviewAvailableFor(threadRef.environmentId));
       const linkChildren = <MarkdownLinkContext value>{children}</MarkdownLinkContext>;
-      // Maker fork: a bare local link (a dev server) is a pill like a project action link.
-      const localPillLabel =
-        href && faviconHost && hasText && !isPullRequestAutolink
-          ? localWebLinkLabel(href, plainHastText(node))
+      const openPillLabel =
+        openTarget !== null && writtenHref
+          ? openLinkLabel(hastPlainTextDeep(node), writtenHref, openTarget)
           : null;
       const link = (
         <a
           {...props}
-          {...(localPillLabel !== null ? { title: href } : {})}
+          {...(openPillLabel !== null ? { title: href } : {})}
           className={cn(
             props.className,
             pullRequestAutolink === "commit" && "font-mono",
-            localPillLabel !== null &&
+            openPillLabel !== null &&
               cn(
                 MARKDOWN_PILL_CLASS_NAME,
                 MARKDOWN_PILL_INTERACTIVE_CLASS_NAME,
@@ -1483,10 +1486,10 @@ const CHAT_MARKDOWN_COMPONENTS = {
             });
           }}
         >
-          {localPillLabel !== null ? (
+          {openPillLabel !== null ? (
             <>
               <GlobeIcon className={MARKDOWN_PILL_ICON_CLASS_NAME} aria-hidden />
-              {localPillLabel}
+              {openPillLabel}
             </>
           ) : faviconHost && hasText && !isPullRequestAutolink ? (
             <MarkdownExternalLinkContent host={faviconHost} plainText={plainHastText(node)}>

@@ -240,6 +240,7 @@ const CHAT_MARKDOWN_SANITIZE_SCHEMA = {
       "t3-context",
       THREAD_LINK_PROTOCOL,
       "t3-action", // Maker fork: project action links (ChatMarkdown checks the shape).
+      "t3-open", // Maker fork: web links drawn as pills (ChatMarkdown checks the shape).
       // Scheme only: the renderer's URL transform checks the rest of the link shape.
       ...LOCAL_FILE_LINK_SCHEMES,
     ],
