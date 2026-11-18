@@ -14,7 +14,7 @@ description = "After any change: lint, web typecheck, and the fork's patch tests
 run = [
   "pnpm exec vp lint --report-unused-disable-directives apps/web/src",
   "cd apps/web && pnpm exec vp run typecheck",
-  "cd apps/web && pnpm exec vp test run src/components/chat/MarkdownProjectActionLink.test.ts src/components/chat/markdownOpenLink.test.ts --project unit",
+  "cd apps/web && pnpm exec vp test run src/components/chat/MarkdownProjectActionLink.test.ts src/components/chat/markdownOpenLink.test.ts src/components/chat/markdownReplyStyles.test.ts --project unit",
 ]
 
 [tasks.show]
