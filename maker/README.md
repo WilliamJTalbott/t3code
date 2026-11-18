@@ -13,6 +13,8 @@ Local patches on top of the latest stable T3 Code release. Never sent upstream.
   detached so it survives T3 quitting (launchd on the Mac, a systemd user unit
   on Linux). On Linux the app lives in `~/.local/opt/t3code-maker`, with
   `~/.local/bin/t3code` and a desktop entry; no sudo.
+- `maker/public.env`: the T3 Connect client settings (Clerk key, relay URL)
+  that upstream's release CI injects; without them the app can't sign in.
 - Linux toolchain: `mise.local.toml` (untracked) pins node, pnpm and rust.
 - Run daily by the `t3-fork-update` (Mac) and `t3-fork-update-pc` schedules
   (dotfiles `schedules/`).

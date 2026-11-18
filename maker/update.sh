@@ -15,6 +15,9 @@ if [[ -z "${MAKER_COPY:-}" ]]; then
   MAKER_COPY=1 MAKER_REPO="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)" exec bash "$copy" "$@"
 fi
 cd "$MAKER_REPO"
+# T3 Connect settings the official release CI injects (maker/public.env).
+public_env="$(git show chore/maker:maker/public.env)"
+set -a; eval "$(grep -E '^[A-Z0-9_]+=' <<<"$public_env")"; set +a
 # The build calls vp (Vite+); use the repo's own copy when none is installed.
 export PATH="$MAKER_REPO/node_modules/.bin:$PATH"
 os="$(uname -s)"
