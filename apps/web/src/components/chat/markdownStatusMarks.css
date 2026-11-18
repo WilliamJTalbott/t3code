@@ -1,0 +1,8 @@
+/* Maker patch (feat/status-marks): ✓/✗ in agent replies, wrapped by rehypeStatusMarks. */
+.chat-markdown .chat-markdown-status-ok {
+  color: var(--success);
+}
+
+.chat-markdown .chat-markdown-status-fail {
+  color: var(--destructive);
+}
