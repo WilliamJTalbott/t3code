@@ -26,16 +26,32 @@ export function shortWebUrl(target: string): string {
 /** Longest URL label shown whole; longer ones show only their end. */
 const OPEN_LINK_LABEL_MAX = 32;
 
-/** A long short-URL cut to its last path segment: `…/added_to_workspace_email`. */
+/**
+ * A long short-URL cut to as many trailing path segments as fit, keeping at
+ * least the last: `…/bgea_volunteer_care/pull/2104`, `…/added_to_workspace_email`.
+ */
 export function compactWebUrl(target: string): string {
   const short = shortWebUrl(target);
   if (short.length <= OPEN_LINK_LABEL_MAX) return short;
-  const last = new URL(target).pathname.split("/").findLast((segment) => segment !== "");
-  if (!last) return short;
+  const segments = new URL(target).pathname
+    .split("/")
+    .filter((segment) => segment !== "")
+    .map(decodeSegment);
+  if (segments.length === 0) return short;
+  let label = `…/${segments.pop()}`;
+  for (let segment = segments.pop(); segment !== undefined; segment = segments.pop()) {
+    const longer = `…/${segment}/${label.slice(2)}`;
+    if (longer.length > OPEN_LINK_LABEL_MAX) break;
+    label = longer;
+  }
+  return label;
+}
+
+function decodeSegment(segment: string): string {
   try {
-    return `…/${decodeURIComponent(last)}`;
+    return decodeURIComponent(segment);
   } catch {
-    return `…/${last}`;
+    return segment;
   }
 }
 
