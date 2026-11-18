@@ -64,7 +64,16 @@ describe("compactWebUrl", () => {
     expect(compactWebUrl("http://localhost:4321/posts/")).toBe("localhost:4321/posts");
   });
 
-  it("cuts long ones to the last path segment", () => {
-    expect(compactWebUrl("http://localhost:3000/a/very/long/path/to/some/page/")).toBe("…/page");
+  it("keeps as many trailing segments as fit", () => {
+    expect(compactWebUrl("https://github.com/RoleModel/bgea_volunteer_care/pull/2104")).toBe(
+      "…/bgea_volunteer_care/pull/2104",
+    );
+    expect(compactWebUrl("http://localhost:3000/a/very/long/path/to/some/page/")).toBe(
+      "…/a/very/long/path/to/some/page",
+    );
+  });
+
+  it("keeps the last segment even when it alone is long", () => {
+    expect(compactWebUrl(`http://localhost:3000/x/${"y".repeat(40)}`)).toBe(`…/${"y".repeat(40)}`);
   });
 });
