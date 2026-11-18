@@ -97,6 +97,13 @@ import {
   MarkdownProjectActionLink,
   parseProjectActionHref,
 } from "./chat/MarkdownProjectActionLink";
+import { localWebLinkLabel } from "./chat/markdownLocalLink";
+import {
+  MARKDOWN_PILL_CLASS_NAME,
+  MARKDOWN_PILL_ICON_CLASS_NAME,
+  MARKDOWN_PILL_INTERACTIVE_CLASS_NAME,
+  MARKDOWN_PILL_LINK_OVERRIDES_CLASS_NAME,
+} from "./chat/markdownPill";
 import {
   decodeMarkdownLinkEscapes,
   renderCodexInlineDirectivesAsMarkdown,
@@ -1391,10 +1398,25 @@ const CHAT_MARKDOWN_COMPONENTS = {
       const canOpenInPreview =
         canOperatePreview && Boolean(threadRef && isPreviewAvailableFor(threadRef.environmentId));
       const linkChildren = <MarkdownLinkContext value>{children}</MarkdownLinkContext>;
+      // Maker fork: a bare local link (a dev server) is a pill like a project action link.
+      const localPillLabel =
+        href && faviconHost && hasText && !isPullRequestAutolink
+          ? localWebLinkLabel(href, plainHastText(node))
+          : null;
       const link = (
         <a
           {...props}
-          className={cn(props.className, pullRequestAutolink === "commit" && "font-mono")}
+          {...(localPillLabel !== null ? { title: href } : {})}
+          className={cn(
+            props.className,
+            pullRequestAutolink === "commit" && "font-mono",
+            localPillLabel !== null &&
+              cn(
+                MARKDOWN_PILL_CLASS_NAME,
+                MARKDOWN_PILL_INTERACTIVE_CLASS_NAME,
+                MARKDOWN_PILL_LINK_OVERRIDES_CLASS_NAME,
+              ),
+          )}
           data-markdown-copy={pullRequestCopy}
           data-markdown-image-link={!hasText || undefined}
           href={href}
@@ -1546,7 +1568,12 @@ const CHAT_MARKDOWN_COMPONENTS = {
             });
           }}
         >
-          {faviconHost && hasText && !isPullRequestAutolink ? (
+          {localPillLabel !== null ? (
+            <>
+              <GlobeIcon className={MARKDOWN_PILL_ICON_CLASS_NAME} aria-hidden />
+              {localPillLabel}
+            </>
+          ) : faviconHost && hasText && !isPullRequestAutolink ? (
             <MarkdownExternalLinkContent host={faviconHost} plainText={plainHastText(node)}>
               {linkChildren}
             </MarkdownExternalLinkContent>
