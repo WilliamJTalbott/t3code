@@ -77,7 +77,7 @@ if [[ "$os" != Darwin ]]; then
   # Upstream caps glibc at its CI's version so releases run on older distros.
   # This build only runs on this machine, so raise the cap to the host's glibc
   # for the build, uncommitted, and put the file back afterwards.
-  glibc="$(ldd --version | head -1 | grep -oE '[0-9]+\.[0-9]+$')"
+  glibc="$(ldd --version | sed -n 1p | grep -oE '[0-9]+\.[0-9]+$')"
   sed -i "s/^const GLIBC_BUILD_CEILING = \".*\";/const GLIBC_BUILD_CEILING = \"$glibc\";/" scripts/linux-glibc.ts
   trap 'git checkout --quiet -- scripts/linux-glibc.ts' EXIT
   T3CODE_DESKTOP_OUTPUT_DIR="$out" T3CODE_DESKTOP_VERSION="${latest#v}" \
