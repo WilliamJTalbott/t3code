@@ -6,6 +6,7 @@ set -euo pipefail
 img="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 delay="${2:-30}"
 [[ -f "$img" ]] || { echo "error: no AppImage at $img" >&2; exit 1; }
+tree="$(cat "$(dirname "$img")/MAKER_TREE" 2>/dev/null || echo none)"
 
 unit="maker-t3-install"
 log="$HOME/.cache/maker/t3-install.log"
@@ -14,7 +15,7 @@ mkdir -p "$(dirname "$job")"
 cat > "$job" <<'JOB'
 #!/bin/bash
 set -u
-img="$1"; delay="$2"; log="$3"
+img="$1"; delay="$2"; log="$3"; tree="$4"
 exec >>"$log" 2>&1
 app="$HOME/.local/opt/t3code-maker"
 echo "=== $(date) installing $img"
@@ -38,6 +39,7 @@ rm -rf "$app.old"
 [[ -d "$app" ]] && mv "$app" "$app.old"
 if mv "$stage/squashfs-root" "$app"; then
   rm -rf "$app.old" "$stage"
+  mkdir -p "$HOME/.local/state/t3code-maker" && echo "$tree" > "$HOME/.local/state/t3code-maker/tree"
 else
   echo "install failed; restoring the previous app"
   rm -rf "$app"; [[ -d "$app.old" ]] && mv "$app.old" "$app"; rm -rf "$stage"
@@ -74,5 +76,5 @@ systemd-run --user --quiet --collect --unit app-t3code-maker --slice app-graphic
 echo "=== $(date) done: $(cat "$app/MAKER_VERSION")"
 JOB
 systemctl --user reset-failed "$unit" 2>/dev/null || true
-systemd-run --user --quiet --unit "$unit" --collect -- /bin/bash "$job" "$img" "$delay" "$log"
+systemd-run --user --quiet --unit "$unit" --collect -- /bin/bash "$job" "$img" "$delay" "$log" "$tree"
 echo "T3 will quit and restart with the new build in ${delay}s (log: $log)"

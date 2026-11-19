@@ -9,6 +9,9 @@ Local patches on top of the latest stable T3 Code release. Never sent upstream.
   `release/maker/`. Stops with exit 2 if a patch no longer applies. On Linux
   it only builds `origin/maker` as an x64 AppImage, and prints `waiting`
   (exit 3) until the Mac has moved `maker` to the latest tag.
+- Up to date means the installed build is the latest stable tag _and_ the
+  current `maker` tree, so a patch change on the same release also rebuilds.
+  The install scripts record that tree in `~/.local/state/t3code-maker/tree`.
 - `maker/install.sh <dmg|AppImage>`: quits T3, swaps the app, relaunches,
   detached so it survives T3 quitting (launchd on the Mac, a systemd user unit
   on Linux). On Linux the app lives in `~/.local/opt/t3code-maker`, with
