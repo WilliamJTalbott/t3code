@@ -38,6 +38,7 @@ import { stackedThreadToast, toastManager } from "../ui/toast";
 import { confirmTerminalClose } from "../../lib/terminalCloseConfirm";
 import { findReusableProjectScriptTerminal } from "../../lib/projectScriptTerminal";
 import { closingTerminalIds } from "../terminal/closingTerminals";
+import { projectActionTerminalInput } from "./MarkdownProjectActionLink";
 import { type TerminalContextSelection } from "../../lib/terminalContext";
 import {
   focusActiveDrawerTerminal,
@@ -215,6 +216,12 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
       shellHistory?: "preserve" | "suppress";
       /** Maker fork: "panel" runs it in a new side-panel terminal instead of the drawer. */
       place?: "panel";
+      /**
+       * Maker fork: the project action this runs, from a `t3-action:` link. It gets one panel
+       * terminal, rerun in place, and the shell exits when the command succeeds, which closes
+       * the terminal. A failure keeps it open to read.
+       */
+      action?: string;
     },
   ) => {
     const inPanel = options?.place === "panel";
@@ -255,6 +262,10 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
       return;
     }
 
+    const actionTerminalId = options?.action ? `action-${options.action}` : null;
+    const actionTerminalFree =
+      actionTerminalId !== null && !closingTerminalIds(activeThreadRef).includes(actionTerminalId);
+    const rerunAction = actionTerminalFree && panelTerminalIds.has(actionTerminalId);
     const launched = terminalActions.launchTerminal({
       // The drawer opens with the target already placed: opening it empty would claim
       // DEFAULT_THREAD_TERMINAL_ID, which a right-panel terminal may already own.
@@ -265,7 +276,9 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
             ? storeNewTerminal(activeThreadRef, terminalId)
             : storeEnsureTerminal(activeThreadRef, terminalId, { open: true }),
       ...(inPanel
-        ? {}
+        ? actionTerminalFree
+          ? { terminalId: actionTerminalId }
+          : {}
         : reusableTerminalId === null
           ? { size: { cols: SCRIPT_TERMINAL_COLS, rows: SCRIPT_TERMINAL_ROWS } }
           : { terminalId: reusableTerminalId }),
@@ -289,11 +302,15 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
       return;
     }
 
+    // A rerun first interrupts what the action's terminal is still running.
     const writeResult = await terminalActions.writeToTerminal(
       targetTerminalId,
-      options?.shellHistory === "preserve"
-        ? `${script.command}\r`
-        : projectScriptTerminalInput(script.command),
+      (rerunAction ? "\x03" : "") +
+        (options?.action
+          ? projectActionTerminalInput(script.command)
+          : options?.shellHistory === "preserve"
+            ? `${script.command}\r`
+            : projectScriptTerminalInput(script.command)),
     );
     if (!writeResult) return;
     if (writeResult._tag === "Failure") {
@@ -331,7 +348,7 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
   };
   const runProjectScriptStable = useStableCallback(runProjectScript);
 
-  const runShellCommand = (command: string, options?: { place?: "panel" }) => {
+  const runShellCommand = (command: string, options?: { place?: "panel"; action?: string }) => {
     void runProjectScript(
       {
         id: "chat-code-block",

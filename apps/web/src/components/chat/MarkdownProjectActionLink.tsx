@@ -4,7 +4,7 @@ import {
   type ProjectScript,
   type ScopedThreadRef,
 } from "@t3tools/contracts";
-import { resolveProjectScripts } from "@t3tools/shared/projectScripts";
+import { projectScriptTerminalInput, resolveProjectScripts } from "@t3tools/shared/projectScripts";
 import { PlayIcon } from "lucide-react";
 
 import { useEnvironmentSettings } from "~/hooks/useSettings";
@@ -17,7 +17,8 @@ import {
 import { useProjects, useThreadShell } from "~/state/entities";
 
 // Maker fork: `[label](t3-action:<script-id>)` in a message is a small button that runs that
-// project action in a new side-panel terminal.
+// project action in a side-panel terminal of its own. Clicking again reruns it there, and the
+// terminal closes when the command succeeds.
 
 const ACTION_HREF_PATTERN = /^t3-action:([a-z0-9][a-z0-9-]*)$/;
 
@@ -25,6 +26,11 @@ const ACTION_HREF_PATTERN = /^t3-action:([a-z0-9][a-z0-9-]*)$/;
 export function parseProjectActionHref(href: string): string | null {
   const id = ACTION_HREF_PATTERN.exec(href)?.[1];
   return id && id.length <= MAX_SCRIPT_ID_LENGTH ? id : null;
+}
+
+/** Types the command so the shell exits after it succeeds; after a failure it stays to read. */
+export function projectActionTerminalInput(command: string): string {
+  return projectScriptTerminalInput(`{ ${command.trim().replace(/[\s;]+$/, "")}; } && exit`);
 }
 
 /** The written label without a leading play sign, which the button draws itself. */
@@ -69,7 +75,7 @@ export function MarkdownProjectActionLink(props: {
   readonly actionId: string;
   readonly written: string | null;
   readonly onRunShellCommand:
-    | ((command: string, options?: { place?: "panel" }) => void)
+    | ((command: string, options?: { place?: "panel"; action?: string }) => void)
     | undefined;
 }) {
   const label = projectActionLabel(props.written, props.actionId);
@@ -90,7 +96,7 @@ function ResolvedAction(props: {
   readonly threadRef: ScopedThreadRef;
   readonly actionId: string;
   readonly label: string;
-  readonly run: (command: string, options?: { place?: "panel" }) => void;
+  readonly run: (command: string, options?: { place?: "panel"; action?: string }) => void;
 }) {
   const scripts = useThreadProjectScripts(props.threadRef, props.threadRef.environmentId);
   const script = scripts.find((entry) => entry.id === props.actionId);
@@ -112,7 +118,7 @@ function ResolvedAction(props: {
             onClick={(event) => {
               event.preventDefault();
               event.stopPropagation();
-              props.run(script.command, { place: "panel" });
+              props.run(script.command, { place: "panel", action: script.id });
             }}
           />
         }
