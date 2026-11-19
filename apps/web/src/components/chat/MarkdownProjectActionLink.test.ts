@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { parseProjectActionHref, projectActionLabel } from "./MarkdownProjectActionLink";
+import {
+  parseProjectActionHref,
+  projectActionLabel,
+  projectActionTerminalInput,
+} from "./MarkdownProjectActionLink";
 
 describe("parseProjectActionHref", () => {
   it("reads a script id", () => {
@@ -30,5 +34,15 @@ describe("projectActionLabel", () => {
   it("falls back to the id", () => {
     expect(projectActionLabel(null, "verify")).toBe("verify");
     expect(projectActionLabel("▶ ", "verify")).toBe("verify");
+  });
+});
+
+describe("projectActionTerminalInput", () => {
+  it("exits the shell only when the command succeeds", () => {
+    expect(projectActionTerminalInput("mise run show")).toBe(" { mise run show; } && exit\r");
+  });
+
+  it("drops a trailing separator that would break the group", () => {
+    expect(projectActionTerminalInput("a && b; ")).toBe(" { a && b; } && exit\r");
   });
 });
