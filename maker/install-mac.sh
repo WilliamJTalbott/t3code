@@ -7,6 +7,7 @@ set -euo pipefail
 dmg="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 delay="${2:-30}"
 [[ -f "$dmg" ]] || { echo "error: no DMG at $dmg" >&2; exit 1; }
+tree="$(cat "$(dirname "$dmg")/MAKER_TREE" 2>/dev/null || echo none)"
 
 label="ws.maker.t3-install"
 log="$HOME/Library/Logs/maker-t3-install.log"
@@ -14,7 +15,7 @@ job="$HOME/Library/Caches/maker-t3-install.sh"
 cat > "$job" <<'JOB'
 #!/bin/bash
 set -u
-dmg="$1"; delay="$2"; label="$3"; log="$4"
+dmg="$1"; delay="$2"; label="$3"; log="$4"; tree="$5"
 exec >>"$log" 2>&1
 app="/Applications/T3 Code (Beta).app"
 echo "=== $(date) installing $dmg"
@@ -26,10 +27,13 @@ mount="$(mktemp -d)"
 if hdiutil attach -quiet -nobrowse -readonly -mountpoint "$mount" "$dmg"; then
   new="$(ls -d "$mount"/*.app | head -1)"
   rm -rf "$app.old"
-  mv "$app" "$app.old" && ditto "$new" "$app" && rm -rf "$app.old" || {
+  if mv "$app" "$app.old" && ditto "$new" "$app"; then
+    rm -rf "$app.old"
+    mkdir -p "$HOME/.local/state/t3code-maker" && echo "$tree" > "$HOME/.local/state/t3code-maker/tree"
+  else
     echo "install failed; restoring the previous app"
     rm -rf "$app"; mv "$app.old" "$app"
-  }
+  fi
   hdiutil detach -quiet "$mount" || true
 else
   echo "could not mount $dmg"
@@ -39,5 +43,5 @@ echo "=== $(date) done: $(defaults read "$app/Contents/Info" CFBundleShortVersio
 launchctl remove "$label"
 JOB
 launchctl remove "$label" 2>/dev/null || true
-launchctl submit -l "$label" -- /bin/bash "$job" "$dmg" "$delay" "$label" "$log"
+launchctl submit -l "$label" -- /bin/bash "$job" "$dmg" "$delay" "$label" "$log" "$tree"
 echo "T3 will quit and restart with the new build in ${delay}s (log: $log)"

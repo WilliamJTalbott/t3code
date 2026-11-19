@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Rebase the patch branches onto the latest stable release and build the app.
 # Usage: maker/update.sh [--force]   (--force rebuilds even when up to date)
-# Prints "up-to-date", "waiting", or the path of the built app (DMG on the
-# Mac, AppImage on Linux) on its last line.
+# Up to date means the installed build is the latest stable tag plus the
+# current patches (same maker tree). Prints "up-to-date", "waiting", or the
+# path of the built app (DMG on the Mac, AppImage on Linux) on its last line.
 # The Mac owns the rebase and pushes `maker`; Linux only builds origin/maker,
 # and prints "waiting" (exit 3) until the Mac has moved it to the latest tag.
 # Never installs: run maker/install.sh <dmg> for that, as the very last step.
@@ -48,10 +49,18 @@ else
   [[ -f "$marker" ]] && own=true
 fi
 echo "latest stable: $latest; installed: $installed (own build: $own)"
-if [[ "v$installed" == "$latest" ]] && $own && ! $force; then
-  echo "up-to-date"
-  exit 0
-fi
+# The tree of the maker build that was installed (maker/install-*.sh), so
+# patch changes on the same release also count as an update.
+installed_tree="$(cat "$HOME/.local/state/t3code-maker/tree" 2>/dev/null || echo none)"
+
+up_to_date() {
+  if [[ "v$installed" == "$latest" ]] && $own && [[ "$installed_tree" == "$1" ]] && ! $force; then
+    git checkout --quiet "$start_branch"
+    echo "patches: unchanged since the installed build"
+    echo "up-to-date"
+    exit 0
+  fi
+}
 
 if [[ "$os" != Darwin ]]; then
   base="$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*-*' origin/maker)"
@@ -60,6 +69,7 @@ if [[ "$os" != Darwin ]]; then
     echo "waiting"
     exit 3
   fi
+  up_to_date "$(git rev-parse 'origin/maker^{tree}')"
   git checkout --quiet -B maker origin/maker
   pnpm install --frozen-lockfile --silent
   out="$MAKER_REPO/release/maker"
@@ -75,6 +85,7 @@ if [[ "$os" != Darwin ]]; then
   git checkout --quiet -- scripts/linux-glibc.ts
   git checkout --quiet "$start_branch"
   img="$(ls "$out"/*.AppImage | head -1)"
+  git rev-parse 'origin/maker^{tree}' > "$out/MAKER_TREE"
   echo "built: ${latest} + origin/maker"
   echo "$img"
   exit 0
@@ -113,6 +124,8 @@ for branch in "${branches[@]}"; do
     exit 2
   fi
 done
+tree="$(git rev-parse 'maker^{tree}')"
+up_to_date "$tree"
 git push --quiet --force-with-lease origin "${branches[@]}" maker
 
 pnpm install --frozen-lockfile --silent
@@ -122,5 +135,6 @@ T3CODE_DESKTOP_OUTPUT_DIR="$out" T3CODE_DESKTOP_VERSION="${latest#v}" \
   node scripts/build-desktop-artifact.ts --platform mac --target dmg --arch arm64
 git checkout --quiet "$start_branch"
 dmg="$(ls "$out"/*.dmg | head -1)"
+echo "$tree" > "$out/MAKER_TREE"
 echo "built: ${latest} + ${branches[*]}"
 echo "$dmg"
