@@ -360,12 +360,14 @@ export function ComposerAttachmentMediaRow({
                           variant="media-close"
                           size="icon-xs"
                           onClick={() => onAnnotateImage(image.id)}
+                          // oxlint-disable-next-line t3code/no-untranslated-copy -- maker fork: English-only
                           aria-label={`Annotate ${image.name}`}
                         />
                       }
                     >
                       <PencilIcon />
                     </TooltipTrigger>
+                    {/* oxlint-disable-next-line t3code/no-untranslated-copy -- maker fork: English-only */}
                     <TooltipPopup side="right">Annotate</TooltipPopup>
                   </Tooltip>
                 ) : null}
