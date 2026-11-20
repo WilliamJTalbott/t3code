@@ -1,3 +1,4 @@
+/* oxlint-disable t3code/no-untranslated-copy -- maker fork: English-only, never sent upstream */
 import {
   ArrowUpRightIcon,
   PencilIcon,
