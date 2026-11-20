@@ -1,3 +1,4 @@
+/* oxlint-disable t3code/no-untranslated-copy -- maker fork: English-only, never sent upstream */
 import {
   MAX_SCRIPT_ID_LENGTH,
   type EnvironmentId,
