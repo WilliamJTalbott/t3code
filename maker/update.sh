@@ -98,6 +98,25 @@ while read -r line; do
 done < <(git show chore/maker:maker/patches)
 branches+=(chore/maker)
 
+# Start each patch branch from the newest copy. A commit pushed from elsewhere
+# (the PC, another worktree) makes the local branch stale, and rebasing that
+# then force-pushing would silently drop the commit from origin.
+for branch in "${branches[@]}"; do
+  git rev-parse --verify --quiet "origin/$branch" >/dev/null || continue
+  if git merge-base --is-ancestor "$branch" "origin/$branch"; then
+    [[ "$(git rev-parse "$branch")" == "$(git rev-parse "origin/$branch")" ]] && continue
+    echo "$branch: fast-forward to origin"
+    if [[ "$branch" == "$(git branch --show-current)" ]]; then
+      git merge --quiet --ff-only "origin/$branch"
+    else
+      git branch --quiet -f "$branch" "origin/$branch"
+    fi
+  elif ! git merge-base --is-ancestor "origin/$branch" "$branch"; then
+    echo "error: $branch and origin/$branch have diverged; reconcile them by hand" >&2
+    exit 2
+  fi
+done
+
 # Rebase each patch branch from the stable tag it sits on to the latest.
 for branch in "${branches[@]}"; do
   base="$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*-*' "$branch")"
