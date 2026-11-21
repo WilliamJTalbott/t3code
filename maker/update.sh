@@ -117,6 +117,17 @@ for branch in "${branches[@]}"; do
   fi
 done
 
+# Take patch commits pushed from the other machine first, so the rebase and
+# force-push below never drop them.
+for branch in "${branches[@]}"; do
+  git merge-base --is-ancestor "$branch" "origin/$branch" 2>/dev/null || continue
+  if [[ "$branch" == "$start_branch" ]]; then
+    git merge --quiet --ff-only "origin/$branch"
+  else
+    git branch --quiet -f "$branch" "origin/$branch"
+  fi
+done
+
 # Rebase each patch branch from the stable tag it sits on to the latest.
 for branch in "${branches[@]}"; do
   base="$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*-*' "$branch")"
