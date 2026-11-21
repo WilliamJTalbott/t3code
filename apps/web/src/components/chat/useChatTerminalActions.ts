@@ -218,9 +218,9 @@ export function useChatTerminalActions(input: ChatTerminalActionsInput) {
       /** Maker fork: "panel" runs it in a new side-panel terminal instead of the drawer. */
       place?: "panel";
       /**
-       * Maker fork: the project action this runs, from a `t3-action:` link. It gets one panel
-       * terminal, rerun in place, and the shell exits when the command succeeds, which closes
-       * the terminal. A failure keeps it open to read.
+       * Maker fork: the project action this runs, from a `t3-action:` link, the actions menu
+       * or an action shortcut. It gets one panel terminal, rerun in place, and the shell exits
+       * when the command succeeds, which closes the terminal. A failure keeps it open to read.
        */
       action?: string;
     },

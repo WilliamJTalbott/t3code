@@ -2074,6 +2074,12 @@ export default function ChatView(props: ChatViewProps) {
     setTerminalUiLaunchContext,
     setThreadError,
   });
+  // Maker fork: project actions run like `t3-action:` links, in a side-panel terminal of
+  // their own that closes when the action succeeds.
+  const runProjectActionStable = useStableCallback(
+    (script: Parameters<typeof runProjectScriptStable>[0]) =>
+      void runProjectScriptStable(script, { place: "panel", action: script.id }),
+  );
   const {
     saveProjectScript: saveProjectScriptStable,
     updateProjectScript: updateProjectScriptStable,
@@ -2979,7 +2985,7 @@ export default function ChatView(props: ChatViewProps) {
       const scriptId = projectScriptIdFromCommand(command);
       if (!scriptId || !activeProject || !canOperateTerminal) return undefined;
       const script = activeProjectScripts.find((entry) => entry.id === scriptId);
-      return script ? () => void runProjectScriptStable(script) : undefined;
+      return script ? () => runProjectActionStable(script) : undefined;
     },
   });
 
@@ -4183,7 +4189,7 @@ export default function ChatView(props: ChatViewProps) {
                   {...(isServerThread && isGitRepo
                     ? { onOpenChanges: openChangesFromThreadPanelStable }
                     : {})}
-                  onRunProjectScript={runProjectScriptStable}
+                  onRunProjectScript={runProjectActionStable}
                   onAddProjectScript={saveProjectScriptStable}
                   onUpdateProjectScript={updateProjectScriptStable}
                   onDeleteProjectScript={deleteProjectScriptStable}
