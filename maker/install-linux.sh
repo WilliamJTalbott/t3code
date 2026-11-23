@@ -37,12 +37,15 @@ for _ in $(seq 60); do pgrep -f '(t3code-maker|t3code-bin)/t3code' >/dev/null ||
 pkill -KILL -f '(t3code-maker|t3code-bin)/t3code' || true
 rm -rf "$app.old"
 [[ -d "$app" ]] && mv "$app" "$app.old"
+failed=0
 if mv "$stage/squashfs-root" "$app"; then
   rm -rf "$app.old" "$stage"
   mkdir -p "$HOME/.local/state/t3code-maker" && echo "$tree" > "$HOME/.local/state/t3code-maker/tree"
 else
+  # T3 is already quit, so keep going to relaunch the old app, then fail.
   echo "install failed; restoring the previous app"
   rm -rf "$app"; [[ -d "$app.old" ]] && mv "$app.old" "$app"; rm -rf "$stage"
+  failed=1
 fi
 
 # Launcher, desktop entry and icons, all in the home folder.
@@ -73,6 +76,10 @@ update-desktop-database -q "$HOME/.local/share/applications" 2>/dev/null || true
 # Its own unit, so it outlives this job and gets the graphical session's env.
 systemctl --user reset-failed app-t3code-maker 2>/dev/null || true
 systemd-run --user --quiet --collect --unit app-t3code-maker --slice app-graphical.slice -- "$HOME/.local/bin/t3code"
+if (( failed )); then
+  echo "=== $(date) FAILED: still on $(cat "$app/MAKER_VERSION" 2>/dev/null || echo unknown)"
+  exit 1
+fi
 echo "=== $(date) done: $(cat "$app/MAKER_VERSION")"
 JOB
 systemctl --user reset-failed "$unit" 2>/dev/null || true
