@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vite-plus/test";
 
 vi.mock("./markdownStatusMarks.css", () => ({}));
 
-const { rehypeStatusMarks, STATUS_FAIL_CLASS_NAME, STATUS_OK_CLASS_NAME } =
+const { rehypeStatusMarks, STATUS_ASK_CLASS_NAME, STATUS_FAIL_CLASS_NAME, STATUS_OK_CLASS_NAME } =
   await import("./markdownStatusMarks");
 
 type Node = {
@@ -49,6 +49,17 @@ describe("rehypeStatusMarks", () => {
     expect(strong?.children?.map((c) => c.value ?? c.children?.[0]?.value).join("")).toBe(
       "✓ added shader ✗ headless check ✔ pushed",
     );
+  });
+
+  it("marks a ? that starts a word, not one that ends a question", () => {
+    const tree = run(
+      el("root", [el("p", [text("✓ pushed ? capture ?shots Pipeline? Why? ok ? 2")])]),
+    );
+    expect(marks(tree)).toEqual([
+      `${STATUS_OK_CLASS_NAME}:✓`,
+      `${STATUS_ASK_CLASS_NAME}:?`,
+      `${STATUS_ASK_CLASS_NAME}:?`,
+    ]);
   });
 
   it("leaves code, code blocks and links alone", () => {
